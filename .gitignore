@@ -1,4 +1,4 @@
 en.subject.pdf
 llm_sdk
 .vscode
-.venv
+.venvdata/
