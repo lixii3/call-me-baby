@@ -1,5 +1,24 @@
+# Metadata generati da editor/WSL (visti i file :Zone.Identifier)
+*:Zone.Identifier
+
 en.subject.pdf
+
 llm_sdk
 .vscode
-.venv
+# Virtual environment creato da uv sync (nella root e in eventuali sottocartelle)
+.venv/
+*/.venv/
+
 data
+# Bytecode e cache di Python
+*.py[cod]
+*$py.class
+**/__pycache__/
+**/.mypy_cache/
+
+archive-v0
+builds-v0
+interpreter-v4
+sdists-v9
+simple-v20
+wheels-v6

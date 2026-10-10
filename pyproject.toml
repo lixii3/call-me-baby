@@ -1,5 +1,5 @@
 [project]
-name = "callmemaybe"
+name = "call-me-baby"
 version = "0.1.0"
 description = ""
 authors = [
@@ -7,12 +7,22 @@ authors = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "numpy (==2.2.0)",
-    "pydantic (==2.13.5)"
+    "numpy (==1.26.0)",
+    "llm-sdk",
+    "accelerate>=1.15.0",
 ]
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
-package-mode = false
+
+[tool.uv]
+cache-dir = "/home/lmongili/sgoinfre/call-me-baby/"
+package = false
+
+[tool.uv.sources]
+llm_sdk = { workspace = true }
+
+[tool.uv.workspace]
+members = ["llm_sdk"]

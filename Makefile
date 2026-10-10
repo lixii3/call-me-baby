@@ -2,22 +2,21 @@ NAME = src
 PYTHON = python3
 VENV = .venv
 BIN = $(VENV)/bin
+ARGS = --functions_definition data/input/functions_definition.json
 
 install:
-	$(PYTHON) -m venv $(VENV)
-	$(BIN)/python -m pip install --upgrade pip
-	$(BIN)/python -m pip install flake8 mypy poetry
-	$(BIN)/poetry install
+	uv sync
 
 run:
-	$(BIN)/$(PYTHON) -m $(NAME)
+	uv sync
+	uv run python -m src $(ARGS)
 
 debug:
 	$(BIN)/$(PYTHON) -m pdb $(NAME)
 
 clean:
-	rm -rf $(VENV)
-	rm -rf src/__pycache__
+	rm -rfv src/__pycache__
+	rm -rfv $(VENV)
 
 lint:
 	$(BIN)/flake8 $(NAME) src
