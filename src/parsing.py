@@ -52,4 +52,3 @@ def parse_prompts(file: Path) -> List[str]:
         print(prompts)
         return prompts
     return []
-        
