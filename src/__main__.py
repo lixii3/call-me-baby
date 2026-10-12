@@ -1,4 +1,4 @@
-from src.parsing import parse_args, parse_prompts
+from src.parsing import parse_args, parse_prompts, parse_functions, ParsingException
 from src.utils import Funct, Output
 import numpy as np
 import json
@@ -10,31 +10,20 @@ from pydantic import ValidationError
 #     print(e)
 #     exit()
 
-
-if __name__ == "__main__":
-    args: dict[str, Path] = parse_args()
-    # prompts = parse_prompts(args["input"])
-    # bobby = Small_LLM_Model()
-    # tensor = bobby.encode(prompts[0])
+def main() -> None:
+    # parse input data from json files
     try:
-        with args["functions_definition"].open("r", encoding="utf-8") as json_file:
-                    data = json.load(json_file)
-    except (KeyError, OSError) as e:
+        args: dict[str, Path] = parse_args()
+        prompts: list[str] = parse_prompts(args.get("input", Path("")))
+        functions: list[Funct] = parse_functions(args.get("functions_definition", Path("")))
+        if not len(prompts) or not len(functions):
+            raise ParsingException("empty input or functions_definitions file")
+    except ParsingException as e:
         print(e)
         exit()
-    functions: list[Funct] = []
-    out: Output
-    for d in data:
-        dd = dict(d)
-        name = str(dd["name"])
-        description = str(dd["description"])
-        parameters = {str(k): str(dict(v).get("type")) for k, v in dict(dd["parameters"]).items()}
-        returns = str(dict(dd["returns"])["type"])
-        try:
-            f = Funct(name=name, description=description,
-                      parameters=parameters, returns=returns)
-        except (ValidationError, KeyError) as e:
-            print(e)
-            continue
-        functions.append(f)
-        print(str(f))
+    
+
+
+
+if __name__ == "__main__":
+    main()

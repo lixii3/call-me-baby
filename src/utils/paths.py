@@ -10,6 +10,8 @@ def path_esistente(valore: str) -> Path:
 
 def file_esistente(valore: str) -> Path:
     p = Path(valore)
+    if valore == "":
+        raise ValueError(f"'{valore}' non è un file valido.")
     if not p.is_file():
         raise ValueError(f"'{valore}' non è un file valido.")
     return p
