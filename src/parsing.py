@@ -3,9 +3,8 @@ try:
     import argparse
     from typing import List, Any
     from src.utils import file_esistente
-    from pathlib import Path
     import json
-    from src.utils import Funct
+    from src.utils import Funct, Path
     from pydantic import ValidationError
 except ImportError as e:
     print(e)
@@ -86,5 +85,4 @@ def parse_functions(funct_def_file: Path) -> list[Funct]:
         except KeyError as e:
             raise ParsingException(f"{str(e)}")
         functions.append(f)
-        print(str(f))
     return functions

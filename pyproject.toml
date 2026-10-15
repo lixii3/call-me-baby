@@ -21,6 +21,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.uv]
 cache-dir = "/home/lmongili/sgoinfre/call-me-baby/"
 package = false
+project-environment = ".build/venv"
 
 [tool.uv.sources]
 llm_sdk = { workspace = true }

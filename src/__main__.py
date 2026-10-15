@@ -1,5 +1,6 @@
 from src.parsing import parse_args, parse_prompts, parse_functions, ParsingException
-from src.utils import Funct, Output
+from src.utils import Funct, Response, add_responses_to_json
+import random as rm
 import numpy as np
 import json
 from pathlib import Path
@@ -21,8 +22,21 @@ def main() -> None:
     except ParsingException as e:
         print(e)
         exit()
+        
+    # test Respose
+    outs: List[Response] = []
+    for prompt in prompts:
+        f = rm.choice(functions)
+        parameters: dict[str, Any] = {}
+        for k, v in f.parameters.items():
+            parameters[k] = "42"
+        try:
+            outs.append(Response(prompt=prompt, funct=f, parameters=parameters))
+        except ValidationError as e:
+            print(e)
     
-
+    add_responses_to_json(outs, args["output"])
+    
 
 
 if __name__ == "__main__":
