@@ -19,9 +19,8 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.uv]
-cache-dir = "/home/lmongili/sgoinfre/call-me-baby/"
+cache-dir = ".uv_cache"
 package = false
-project-environment = ".build/venv"
 
 [tool.uv.sources]
 llm_sdk = { workspace = true }

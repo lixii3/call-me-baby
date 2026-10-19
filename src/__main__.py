@@ -5,6 +5,7 @@ import numpy as np
 import json
 from pathlib import Path
 from pydantic import ValidationError
+from src.clanker import test
 # try:
 #     # from llm_sdk.llm_sdk import Small_LLM_Model
 # except ImportError as e:
@@ -24,18 +25,7 @@ def main() -> None:
         exit()
         
     # test Respose
-    outs: List[Response] = []
-    for prompt in prompts:
-        f = rm.choice(functions)
-        parameters: dict[str, Any] = {}
-        for k, v in f.parameters.items():
-            parameters[k] = "42"
-        try:
-            outs.append(Response(prompt=prompt, funct=f, parameters=parameters))
-        except ValidationError as e:
-            print(e)
-    
-    add_responses_to_json(outs, args["output"])
+    test(args, functions, "What the fox say?")
     
 
 

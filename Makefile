@@ -5,6 +5,7 @@ BIN = $(VENV)/bin
 ARGS = --functions_definition data/input/functions_definition.json
 
 install:
+
 	uv sync
 
 run:
