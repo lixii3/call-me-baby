@@ -1,6 +1,7 @@
 from llm_sdk import Small_LLM_Model as Baby
 import numpy as np
 import json
+from torch import Tensor
 
 
 def get_token_list(baby: Baby) -> list[int]:
@@ -25,8 +26,8 @@ def get_token_vocabulary(baby: Baby) -> dict[str, int]:
     return dict(data_dict)
 
 
-def get_baby_best_token(input_ids: list[Tensor], baby: Baby) -> int:
-    logits: list[float] = baby.get_logits_from_input_ids(ids)
-    best_idx: int = int(np.argmax(logits))
-    best_token: int = get_token_list(baby)[best_idx]
-    return best_token
+def get_baby_best_token(input_ids: Tensor | list[int], baby: Baby) -> int:
+    if isinstance(input_ids, Tensor):
+        input_ids = input_ids.reshape(-1).tolist()
+    logits: list[float] = baby.get_logits_from_input_ids(input_ids)
+    return int(np.argmax(logits))

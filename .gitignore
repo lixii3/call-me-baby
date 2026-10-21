@@ -13,10 +13,4 @@ data
 *$py.class
 **/__pycache__/
 **/.mypy_cache/
-
-archive-v0
-builds-v0
-interpreter-v4
-sdists-v9
-simple-v20
-wheels-v6
+.uv_cache

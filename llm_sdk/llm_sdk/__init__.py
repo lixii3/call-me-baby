@@ -87,6 +87,14 @@ class Small_LLM_Model:
         return self._tokenizer.decode(ids, skip_special_tokens=True)
 
 
+    def get_eos_token_id(self) -> int:
+        """Return the tokenizer's end-of-sequence token ID."""
+        eos_token_id = self._tokenizer.eos_token_id
+        if eos_token_id is None:
+            raise ValueError("The tokenizer does not define an end-of-sequence token.")
+        return int(eos_token_id)
+
+
     def get_logits_from_input_ids(self, input_ids: list[int]) -> list[float]:
         """
         Given a list of input token ids, return the raw logits (no softmax) for the next token.

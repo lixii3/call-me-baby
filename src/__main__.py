@@ -5,7 +5,7 @@ import numpy as np
 import json
 from pathlib import Path
 from pydantic import ValidationError
-from src.clanker import test
+from src.clanker import call_me_baby
 # try:
 #     # from llm_sdk.llm_sdk import Small_LLM_Model
 # except ImportError as e:
@@ -23,10 +23,10 @@ def main() -> None:
     except ParsingException as e:
         print(e)
         exit()
-        
-    # test Respose
-    test(args, functions, "What the fox say?")
-    
+    try:
+        call_me_baby(args,functions, prompts)
+    except Exception as e:
+        print(e)
 
 
 if __name__ == "__main__":
