@@ -58,7 +58,6 @@ def answer_the_call_baby_please(prompt: str, functions: list[Funct]) -> Response
 
             candidate_ids = generated_ids + [token_id]
             candidate = baby.decode(candidate_ids)
-            print(candidate)
             if candidate == partial:
                 continue
             if is_valid_output_prefix(candidate, functions):

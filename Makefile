@@ -2,11 +2,12 @@ NAME = src
 PYTHON = python3
 VENV = .venv
 BIN = $(VENV)/bin
-ARGS = --functions_definition data/input/functions_definition.json --input test/prompt_test.json
+ARGS = --functions_definition data/input/functions_definition.json
 
 install:
-
 	uv sync
+	$(BIN)/python3 -m pip install flake8
+	$(BIN)/python3 -m pip install mypy
 
 run:
 	uv sync
@@ -20,8 +21,8 @@ clean:
 	rm -rfv $(VENV)
 
 lint:
-	$(BIN)/flake8 $(NAME) src
-	$(BIN)/mypy $(NAME) src --warn-return-any --warn-unused-ignores \
+	$(BIN)/flake8 $(NAME)
+	$(BIN)/mypy $(NAME) --warn-return-any --warn-unused-ignores \
 								--ignore-missing-imports --disallow-untyped-defs \
 								--check-untyped-defs
 

@@ -21,14 +21,14 @@ class _JsonPrefixParser:
         self.text = text
         self.position = position
 
-    def parse_value(self) -> bool:
+    def parse_value(self, regex: bool = False) -> bool:
         """Parse one JSON value; return False when the text ends mid-value."""
         if self.position >= len(self.text):
             return False
 
         char = self.text[self.position]
         if char == '"':
-            return self._parse_string()
+            return self._parse_string(regex=regex)
         if char == "[":
             return self._parse_array()
         if char == "{":
@@ -49,29 +49,40 @@ class _JsonPrefixParser:
                 return True
         raise _InvalidJsonPrefix("not a JSON value prefix")
 
-    def parse_regex_value(self) -> bool:
+    def parse_regex_value(self, regex_str: str | None = None) -> bool:
         """Parse a JSON string containing a valid regular expression."""
-        if self.position >= len(self.text):
+        if regex_str is None:
+            value_start = self.position
+            if not self._parse_string():
+                return False
+            regex_str = self.text[value_start:self.position]
+        if len(regex_str) < 2:
             return False
-        if self.text[self.position] != '"':
+        if regex_str[0] != '"':
             raise _InvalidJsonPrefix("a regex parameter must be a JSON string")
 
-        value_start = self.position
-        if not self._parse_string():
-            return False
-
-        pattern = json.loads(self.text[value_start:self.position])
+        try:
+            pattern = json.loads(regex_str)
+        except json.JSONDecodeError as error:
+            raise _InvalidJsonPrefix("invalid JSON string") from error
         try:
             re.compile(pattern)
         except re.error as error:
             raise _InvalidJsonPrefix("invalid regular expression") from error
         return True
 
-    def _parse_string(self) -> bool:
+    def parse_regex_str(self, regex_str: str | None = None) -> bool:
+        return self.parse_regex_value(regex_str)
+
+    def _parse_string(self, regex: bool = False) -> bool:
+        regex_str = "\""
         self.position += 1
         while self.position < len(self.text):
             char = self.text[self.position]
+            regex_str += char
             if char == '"':
+                if regex:
+                    self.parse_regex_value(regex_str)
                 self.position += 1
                 return True
             # rifiuto i control characters unscaped
@@ -259,12 +270,11 @@ def _function_prefix_state(text: str, function: Funct) -> _PrefixState:
             return _PrefixState.COMPLETE
         return _PrefixState.INVALID
 
-    for parameter_name, parameter_type in function.parameters.items():
-        literal = f" {parameter_name}: "
+    parameters = list(function.parameters.items())
+    for index, (parameter_name, parameter_type) in enumerate(parameters):
+        literal = f"{parameter_name}: " if index > 0 else f" {parameter_name}: "
         remaining = text[position:]
         if len(remaining) < len(literal):
-            # se baby non ha finito di formare l'output per quel parametro
-            # controllo che cio che ce fin ora sia valido
             if literal.startswith(remaining):
                 return _PrefixState.INCOMPLETE
             return _PrefixState.INVALID
@@ -292,7 +302,16 @@ def _function_prefix_state(text: str, function: Funct) -> _PrefixState:
             return _PrefixState.INVALID
         if not _matches_type(value, parameter_type):
             return _PrefixState.INVALID
+
         position = parser.position
+        if index < len(parameters) - 1:
+            while position < len(text) and text[position].isspace():
+                position += 1
+            if position >= len(text) or text[position] != ",":
+                return _PrefixState.INVALID
+            position += 1
+            while position < len(text) and text[position].isspace():
+                position += 1
 
     if position == len(text):
         return _PrefixState.COMPLETE
@@ -330,12 +349,26 @@ def parse_output(text: str, functions: list[Funct]) -> tuple[Funct, dict[str, An
             continue
         parameters: dict[str, Any] = {}
         position = len(function.name)
-        for parameter_name in function.parameters:
-            position += len(f" {parameter_name}: ")
+        parameter_names = list(function.parameters)
+        for index, parameter_name in enumerate(parameter_names):
+            literal = f"{parameter_name}: " if index > 0 else f" {parameter_name}: "
+            position += len(literal)
             parser = _JsonPrefixParser(text, position)
-            if not parser.parse_value():
-                raise ValueError("incomplete JSON value in generated function call")
+            if parameter_name == "regex":
+                if not parser.parse_regex_value():
+                    raise ValueError("incomplete JSON value in generated function call")
+            else:
+                if not parser.parse_value():
+                    raise ValueError("incomplete JSON value in generated function call")
             parameters[parameter_name] = json.loads(text[position:parser.position])
             position = parser.position
+            if index < len(parameter_names) - 1:
+                while position < len(text) and text[position].isspace():
+                    position += 1
+                if position >= len(text) or text[position] != ",":
+                    raise ValueError("missing comma between function parameters")
+                position += 1
+                while position < len(text) and text[position].isspace():
+                    position += 1
         return function, parameters
     raise ValueError(f"generated output is not a complete valid function call: {text!r}")
