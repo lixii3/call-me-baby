@@ -60,8 +60,9 @@ def answer_the_call_baby_please(prompt: str, functions: list[Funct]) -> Response
             candidate = baby.decode(candidate_ids)
             if candidate == partial:
                 continue
-            print(candidate)
+            # seleziono il token oppure lo scarto
             if is_valid_output_prefix(candidate, functions):
+                print(candidate)
                 selected_token = token_id
                 generated_ids.append(token_id)
                 input_ids.append(token_id)

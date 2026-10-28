@@ -2,6 +2,7 @@ from typing import Any, Dict
 from typing_extensions import Self
 from pydantic import BaseModel, Field, model_validator, ValidationError
 from pathlib import Path
+from .token_utills import matches_type
 
 
 class Funct(BaseModel):
@@ -22,12 +23,15 @@ class Response(BaseModel):
             raise ValueError("unmatched number of parameters provided "
                              f"for function: '{self.funct.name}'")
         for name, value in self.parameters.items():
+            type_p: str = self.funct.parameters.get(name, "")
             if self.funct.parameters.get(name) is None:
                 raise ValueError(f"parameter '{name}' does not belong to "
                                  f"function '{self.funct.name}'")
-            if not check_json_typing_by_str(value,self.funct.parameters.get(name, "")):
+            if not matches_type(value, type_p):
                 raise ValueError(f"unmatched pair parameter value/parameter type; got: {value}, "
                                  f"expected type: {self.funct.parameters.get(name)}")
+            if type_p.lower() == "number":
+                self.parameters[name] = float(self.parameters[name])
         return self
 
     def get_dict(self) -> dict[str, Any]:
@@ -38,23 +42,3 @@ class Response(BaseModel):
         return ret
 
 
-def check_json_typing_by_str(value: Any, type_name_str: str) -> bool:
-    # Resolve the string to the actual type object
-    type_name_str = type_name_str.lower()
-    if type_name_str == 'number':
-        return isinstance(value, int | float)
-    if type_name_str == 'string':
-        return isinstance(value, str)
-    if type_name_str =="boolean":
-        return isinstance(value, bool)
-    if type_name_str =="array":
-        return isinstance(value, list)
-    if type_name_str =="object":
-        return isinstance(value, dict)
-
-    target_type = globals().get(type_name_str)
-    if target_type is None:
-        raise TypeError(f"Type '{type_name_str}' is not defined in "
-                        "the current global scope.")
-    # Check if value is an instance of the resolved type
-    return isinstance(value, target_type)

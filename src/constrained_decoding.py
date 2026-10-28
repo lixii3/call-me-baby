@@ -4,7 +4,7 @@ from enum import Enum, auto
 from typing import Any
 from pydantic import BaseModel
 
-from src.utils import Funct
+from src.utils import Funct, matches_type
 
 
 class _InvalidJsonPrefix(ValueError):
@@ -222,20 +222,6 @@ class _JsonPrefixParser(BaseModel):
             self.position += 1
             self._skip_whitespace()
 
-def _matches_type(value: Any, type_name: str) -> bool:
-    normalized: str = type_name.lower()
-    if normalized == "number":
-        return isinstance(value, int | float) and not isinstance(value, bool)
-    if normalized == "string":
-        return isinstance(value, str)
-    if normalized == "boolean":
-        return isinstance(value, bool)
-    if normalized == "array":
-        return isinstance(value, list)
-    if normalized == "object":
-        return isinstance(value, dict)
-    return False
-
 
 def _type_prefix_is_possible(value_prefix: str, type_name: str) -> bool:
     if not value_prefix:
@@ -256,6 +242,7 @@ def _type_prefix_is_possible(value_prefix: str, type_name: str) -> bool:
 
 
 def _function_prefix_state(text: str, function: Funct) -> _PrefixState:
+    # se ancora deve essere generato il nome intero della fn
     if len(text) < len(function.name):
         if function.name.startswith(text):
             return _PrefixState.INCOMPLETE
@@ -274,6 +261,8 @@ def _function_prefix_state(text: str, function: Funct) -> _PrefixState:
     for index, (parameter_name, parameter_type) in enumerate(parameters):
         literal = f"{parameter_name}: " if index > 0 else f" {parameter_name}: "
         remaining = text[position:]
+
+        # controllo se deveessere ancora specificato il noe del parametro
         if len(remaining) < len(literal):
             if literal.startswith(remaining):
                 return _PrefixState.INCOMPLETE
@@ -281,6 +270,7 @@ def _function_prefix_state(text: str, function: Funct) -> _PrefixState:
         if not remaining.startswith(literal):
             return _PrefixState.INVALID
 
+        # controllo sul valore del parametro
         position += len(literal)
         parser = _JsonPrefixParser(text=text, position=position)
         try:
@@ -300,14 +290,16 @@ def _function_prefix_state(text: str, function: Funct) -> _PrefixState:
             value = json.loads(text[position:parser.position])
         except json.JSONDecodeError:
             return _PrefixState.INVALID
-        if not _matches_type(value, parameter_type):
+        if not matches_type(value, parameter_type):
             return _PrefixState.INVALID
 
         position = parser.position
         if index < len(parameters) - 1:
             while position < len(text) and text[position].isspace():
                 position += 1
-            if position >= len(text) or text[position] != ",":
+            if position >= len(text):
+                return _PrefixState.INCOMPLETE
+            if text[position] != ",":
                 return _PrefixState.INVALID
             position += 1
             while position < len(text) and text[position].isspace():
