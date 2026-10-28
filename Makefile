@@ -2,7 +2,7 @@ NAME = src
 PYTHON = python3
 VENV = .venv
 BIN = $(VENV)/bin
-ARGS = --functions_definition data/input/functions_definition.json
+ARGS = --functions_definition data/input/functions_definition.json 
 
 install:
 	uv sync

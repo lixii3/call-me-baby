@@ -2,6 +2,7 @@ import json
 import re
 from enum import Enum, auto
 from typing import Any
+from pydantic import BaseModel
 
 from src.utils import Funct
 
@@ -16,10 +17,9 @@ class _PrefixState(Enum):
     COMPLETE = auto()
 
 
-class _JsonPrefixParser:
-    def __init__(self, text: str, position: int = 0) -> None:
-        self.text = text
-        self.position = position
+class _JsonPrefixParser(BaseModel):
+    text: str
+    position: int = 0
 
     def parse_value(self, regex: bool = False) -> bool:
         """Parse one JSON value; return False when the text ends mid-value."""
@@ -282,7 +282,7 @@ def _function_prefix_state(text: str, function: Funct) -> _PrefixState:
             return _PrefixState.INVALID
 
         position += len(literal)
-        parser = _JsonPrefixParser(text, position)
+        parser = _JsonPrefixParser(text=text, position=position)
         try:
             if parameter_name == "regex":
                 value_complete = parser.parse_regex_value()
@@ -353,7 +353,7 @@ def parse_output(text: str, functions: list[Funct]) -> tuple[Funct, dict[str, An
         for index, parameter_name in enumerate(parameter_names):
             literal = f"{parameter_name}: " if index > 0 else f" {parameter_name}: "
             position += len(literal)
-            parser = _JsonPrefixParser(text, position)
+            parser = _JsonPrefixParser(text=text, position=position)
             if parameter_name == "regex":
                 if not parser.parse_regex_value():
                     raise ValueError("incomplete JSON value in generated function call")

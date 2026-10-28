@@ -38,7 +38,7 @@ def answer_the_call_baby_please(prompt: str, functions: list[Funct]) -> Response
     )
     input_ids: list[int] = baby.encode(mod_prompt).squeeze(0).tolist()
     generated_ids: list[int] = []
-    max_new_tokens = 1024
+    max_new_tokens = 3000
     eos_token_id = baby.get_eos_token_id()
 
     for _ in range(max_new_tokens):
@@ -60,6 +60,7 @@ def answer_the_call_baby_please(prompt: str, functions: list[Funct]) -> Response
             candidate = baby.decode(candidate_ids)
             if candidate == partial:
                 continue
+            print(candidate)
             if is_valid_output_prefix(candidate, functions):
                 selected_token = token_id
                 generated_ids.append(token_id)
