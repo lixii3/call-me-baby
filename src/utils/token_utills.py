@@ -36,8 +36,10 @@ def get_baby_best_token(input_ids: Tensor | list[int], baby: Baby) -> int:
 
 def matches_type(value: Any, type_name: str) -> bool:
     normalized: str = type_name.lower()
-    if normalized == "number":
+    if normalized == "number" or normalized == "float":
         return isinstance(value, int | float) and not isinstance(value, bool)
+    if normalized == "integer":
+        return isinstance(value, int) and not isinstance(value, bool)
     if normalized == "string":
         return isinstance(value, str)
     if normalized == "boolean":

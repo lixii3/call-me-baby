@@ -1,11 +1,9 @@
 from src.parsing import parse_args, parse_prompts, parse_functions, ParsingException
-from src.utils import Funct, Response, add_responses_to_json
-import random as rm
-import numpy as np
-import json
+from src.utils import Funct
 from pathlib import Path
-from pydantic import ValidationError
 from src.clanker import call_me_baby
+import datetime
+
 # try:
 #     # from llm_sdk.llm_sdk import Small_LLM_Model
 # except ImportError as e:
@@ -14,6 +12,7 @@ from src.clanker import call_me_baby
 
 def main() -> None:
     # parse input data from json files
+    start_time: datetime = datetime.datetime.now()
     try:
         args: dict[str, Path] = parse_args()
         prompts: list[str] = parse_prompts(args.get("input", Path("")))
@@ -27,6 +26,13 @@ def main() -> None:
         call_me_baby(args,functions, prompts)
     except Exception as e:
         print(e)
+    end_time: datetime = datetime.datetime.now()
+
+    delta = end_time - start_time
+    total_seconds = int(delta.total_seconds())
+    minutes, seconds = divmod(total_seconds, 60)
+
+    print(f"{minutes:02d}:{seconds:02d}")
 
 
 if __name__ == "__main__":

@@ -1,8 +1,9 @@
 [
+
   {
-    "prompt": "What is the sum of 2 and 3?"
+    "prompt": "Format template: Hello {user}'s profile!"
   },
   {
-    "prompt": "What is the sum of 265 and 345?"
+    "prompt": "Format template: Say \"hello\" to {name}"
   }
 ]

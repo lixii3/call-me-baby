@@ -228,7 +228,9 @@ def _type_prefix_is_possible(value_prefix: str, type_name: str) -> bool:
         return True
     first: str = value_prefix[0]
     normalized: str = type_name.lower()
-    if normalized == "number":
+    if normalized == "integer":
+        return re.fullmatch(r"-?(?:0|[1-9][0-9]*)?", value_prefix) is not None
+    if normalized in {"number", "float"}:
         return first in "-0123456789"
     if normalized == "string":
         return first == '"'
@@ -251,9 +253,11 @@ def _function_prefix_state(text: str, function: Funct) -> _PrefixState:
         return _PrefixState.INVALID
 
     position = len(function.name)
-    # se la funct non ha parametri len(output) == len(funct.name)
     if not function.parameters:
-        if position == len(text):
+        remaining = text[position:]
+        if not remaining:
+            return _PrefixState.INCOMPLETE
+        if remaining == ";":
             return _PrefixState.COMPLETE
         return _PrefixState.INVALID
 
@@ -304,6 +308,15 @@ def _function_prefix_state(text: str, function: Funct) -> _PrefixState:
             position += 1
             while position < len(text) and text[position].isspace():
                 position += 1
+        else:
+            while position < len(text) and text[position].isspace():
+                position += 1
+            remaining = text[position:]
+            if not remaining:
+                return _PrefixState.INCOMPLETE
+            if remaining != ";":
+                return _PrefixState.INVALID
+            position += 1
 
     if position == len(text):
         return _PrefixState.COMPLETE
@@ -362,5 +375,11 @@ def parse_output(text: str, functions: list[Funct]) -> tuple[Funct, dict[str, An
                 position += 1
                 while position < len(text) and text[position].isspace():
                     position += 1
+            else:
+                while position < len(text) and text[position].isspace():
+                    position += 1
+                if position >= len(text) or text[position] != ";":
+                    raise ValueError("missing function-call terminator")
+                position += 1
         return function, parameters
     raise ValueError(f"generated output is not a complete valid function call: {text!r}")

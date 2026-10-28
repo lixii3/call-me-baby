@@ -32,15 +32,15 @@ def answer_the_call_baby_please(prompt: str, functions: list[Funct]) -> Response
         f"Available functions:\n{function_schemas}\n"
         "Return only one function call on one line. Use the exact function name, "
         "then every parameter in the listed order as `name: JSON_VALUE`, separated "
-        "by one space. JSON_VALUE must be valid JSON of the declared type; quote "
-        "strings with JSON double quotes. Do not add an explanation.\n"
+        "by commas. Terminate the call with a semicolon. JSON_VALUE must be valid "
+        "JSON of the declared type; quote strings with JSON double quotes. "
+        "Do not add an explanation.\n"
         "Function call: "
     )
     input_ids: list[int] = baby.encode(mod_prompt).squeeze(0).tolist()
     generated_ids: list[int] = []
-    max_new_tokens = 3000
+    max_new_tokens = 50000
     eos_token_id = baby.get_eos_token_id()
-
     for _ in range(max_new_tokens):
         logits = baby.get_logits_from_input_ids(input_ids)
         ranked_token_ids = sorted(
@@ -60,9 +60,8 @@ def answer_the_call_baby_please(prompt: str, functions: list[Funct]) -> Response
             candidate = baby.decode(candidate_ids)
             if candidate == partial:
                 continue
-            # seleziono il token oppure lo scarto
+            print(candidate) 
             if is_valid_output_prefix(candidate, functions):
-                print(candidate)
                 selected_token = token_id
                 generated_ids.append(token_id)
                 input_ids.append(token_id)
@@ -70,10 +69,17 @@ def answer_the_call_baby_please(prompt: str, functions: list[Funct]) -> Response
 
         if selected_token is None:
             raise RuntimeError(
-                "The model has no token that can continue a valid function call."
+                "The model has no token that can continue a valid function call. "
+                f"Generated prefix: {partial!r}"
             )
         if selected_token == eos_token_id:
             break
+        # TODO: CONTROLLA SE LA FUNCTION CALL E' GIA' COMPLETA, IN TAL CASO NON CONTINUO A CERCARE TOKEN
+        try:
+            function, parameters = parse_output(candidate, functions)
+            break
+        except ValueError:
+            continue
     else:
         raise RuntimeError(
             f"The model did not finish a valid function call within "
@@ -82,4 +88,10 @@ def answer_the_call_baby_please(prompt: str, functions: list[Funct]) -> Response
 
     output = baby.decode(generated_ids)
     function, parameters = parse_output(output, functions)
+
+    s = ""
+    print("="*20)
+    for n, v in parameters.items():
+        s += f" {n}: {v} |"
+    print(f"{prompt}:\n{function.name}: {s}\n")
     return Response(prompt=prompt, funct=function, parameters=parameters)

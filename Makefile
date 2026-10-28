@@ -3,7 +3,7 @@ PYTHON = python3
 VENV = .venv
 BIN = $(VENV)/bin
 
-ARGS = --functions_definition data/input/functions_definition.json #--input test/prompt_test.json
+ARGS = --functions_definition data/input/functions_definition.json --input test/prompt_test.json
 
 install:
 	uv sync
