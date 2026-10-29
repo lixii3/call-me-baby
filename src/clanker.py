@@ -20,6 +20,8 @@ def call_me_baby(args: dict[str, Path], functions: list[Funct], prompts: list[st
 
 def answer_the_call_baby_please(prompt: str, functions: list[Funct]) -> Response:
     """Generate one function call, accepting only tokens that preserve its grammar."""
+    if prompt == "":
+        prompt = " "
     function_schemas = "\n".join(
         f"- {function.name}: {function.description}; parameters: "
         + ", ".join(
@@ -41,7 +43,7 @@ def answer_the_call_baby_please(prompt: str, functions: list[Funct]) -> Response
     generated_ids: list[int] = []
     max_new_tokens = 50000
     eos_token_id = baby.get_eos_token_id()
-    for _ in range(max_new_tokens):
+    for i in range(max_new_tokens):
         logits = baby.get_logits_from_input_ids(input_ids)
         ranked_token_ids = sorted(
             range(len(logits)), key=logits.__getitem__, reverse=True
@@ -60,7 +62,7 @@ def answer_the_call_baby_please(prompt: str, functions: list[Funct]) -> Response
             candidate = baby.decode(candidate_ids)
             if candidate == partial:
                 continue
-            print(candidate) 
+            print(candidate)
             if is_valid_output_prefix(candidate, functions):
                 selected_token = token_id
                 generated_ids.append(token_id)
@@ -74,24 +76,27 @@ def answer_the_call_baby_please(prompt: str, functions: list[Funct]) -> Response
             )
         if selected_token == eos_token_id:
             break
-        # TODO: CONTROLLA SE LA FUNCTION CALL E' GIA' COMPLETA, IN TAL CASO NON CONTINUO A CERCARE TOKEN
-        try:
-            function, parameters = parse_output(candidate, functions)
-            break
-        except ValueError:
-            continue
+        # CONTROLLA SE LA FUNCTION CALL E' GIA' COMPLETA, IN TAL CASO NON CONTINUO A CERCARE TOKEN
+        if baby.decode(selected_token).isspace():
+            try:
+                print("DENTRO")
+                parse_output(candidate, functions, prompt)
+                break
+            except ValueError:
+                print("FUORI")
+                continue
     else:
         raise RuntimeError(
             f"The model did not finish a valid function call within "
             f"{max_new_tokens} tokens. Generated prefix: {baby.decode(generated_ids)!r}"
         )
 
-    output = baby.decode(generated_ids)
-    function, parameters = parse_output(output, functions)
+    output: str = baby.decode(generated_ids)
+    response: Response = parse_output(output, functions, prompt)
 
     s = ""
     print("="*20)
-    for n, v in parameters.items():
+    for n, v in response.parameters.items():
         s += f" {n}: {v} |"
-    print(f"{prompt}:\n{function.name}: {s}\n")
-    return Response(prompt=prompt, funct=function, parameters=parameters)
+    print(f"{prompt}:\n{response.funct.name}: {s}\n")
+    return response

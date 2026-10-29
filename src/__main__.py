@@ -1,14 +1,10 @@
-from src.parsing import parse_args, parse_prompts, parse_functions, ParsingException
+from src.parsing import parse_args, parse_prompts, \
+    parse_functions, ParsingException
 from src.utils import Funct
 from pathlib import Path
 from src.clanker import call_me_baby
 import datetime
 
-# try:
-#     # from llm_sdk.llm_sdk import Small_LLM_Model
-# except ImportError as e:
-#     print(e)
-#     exit()
 
 def main() -> None:
     # parse input data from json files

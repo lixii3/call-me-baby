@@ -1,10 +1,10 @@
 try:
+    from os import path
     import sys
     import argparse
     from typing import List, Any
-    from src.utils import file_esistente
     import json
-    from src.utils import Funct, Path
+    from src.utils import Funct, Path, file_esistente
     from pydantic import ValidationError
 except ImportError as e:
     print(e)
@@ -39,6 +39,12 @@ def parse_args() -> dict[str, Path]:
     except argparse.ArgumentTypeError as e:
         raise ParsingException(str(e))
     argsdict = vars(parser.parse_args())
+    # creo file di output se non esiste gia
+    try:
+        with argsdict["output"].open("r") as _:
+            pass
+    except OSError:
+        argsdict["output"].parent.mkdir(parents=True, exist_ok=True)
     return argsdict
 
 def parse_prompts(file: Path) -> List[str]:

@@ -14,4 +14,4 @@ data
 **/__pycache__/
 **/.mypy_cache/
 .uv_cache
-moulinette/
+test/

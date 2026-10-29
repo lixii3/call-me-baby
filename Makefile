@@ -3,7 +3,9 @@ PYTHON = python3
 VENV = .venv
 BIN = $(VENV)/bin
 
-ARGS = --functions_definition data/input/functions_definition.json --input test/prompt_test.json
+ARGS = --functions_definition data/input/functions_definition.json \
+	   --input test/prompt_test.json \
+	   --output test/test_output.json
 
 install:
 	uv sync
@@ -12,10 +14,10 @@ install:
 
 run:
 	uv sync
-	uv run python -m src $(ARGS)
+	uv run python -m $(NAME) $(ARGS)
 
 debug:
-	$(BIN)/$(PYTHON) -m pdb $(NAME)
+	PYTHONPATH=. $(BIN)/$(PYTHON) -m pdb $(NAME)/__main__.py $(ARGS)
 
 clean:
 	rm -rfv src/__pycache__

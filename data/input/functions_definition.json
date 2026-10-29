@@ -27,6 +27,18 @@
     }
   },
   {
+    "name": "fn_greet",
+    "description": "Returns a greeting message for 'name'",
+    "parameters": {
+      "name": {
+        "type": "string"
+      }
+    },
+    "returns": {
+      "type": "string"
+    }
+  },
+  {
     "name": "fn_calculate_compound_interest",
     "description": "Calculate compound interest: principal * (1 + rate)^years.",
     "parameters": {

@@ -3,6 +3,7 @@ import re
 from enum import Enum, auto
 from typing import Any
 from pydantic import BaseModel
+from src.utils import Response
 
 from src.utils import Funct, matches_type
 
@@ -347,39 +348,45 @@ def is_fn_name(candidate: str, functions: list[Funct]) -> bool:
     return any(candidate == function.name for function in functions)
 
 
-def parse_output(text: str, functions: list[Funct]) -> tuple[Funct, dict[str, Any]]:
+def parse_output(text: str, functions: list[Funct], prompt: str) -> Response:
     """Parse a completed constrained-decoding result into its function and arguments."""
     for function in functions:
-        if _function_prefix_state(text, function) is not _PrefixState.COMPLETE:
-            continue
+        parse_text = text
+        if _function_prefix_state(parse_text, function) is not _PrefixState.COMPLETE:
+            parse_text = text.rstrip()
+            if _function_prefix_state(parse_text + ";", function) is not _PrefixState.COMPLETE:
+                continue
         parameters: dict[str, Any] = {}
         position = len(function.name)
         parameter_names = list(function.parameters)
         for index, parameter_name in enumerate(parameter_names):
             literal = f"{parameter_name}: " if index > 0 else f" {parameter_name}: "
             position += len(literal)
-            parser = _JsonPrefixParser(text=text, position=position)
+            parser = _JsonPrefixParser(text=parse_text, position=position)
             if parameter_name == "regex":
                 if not parser.parse_regex_value():
                     raise ValueError("incomplete JSON value in generated function call")
             else:
                 if not parser.parse_value():
                     raise ValueError("incomplete JSON value in generated function call")
-            parameters[parameter_name] = json.loads(text[position:parser.position])
+            parameters[parameter_name] = json.loads(parse_text[position:parser.position])
             position = parser.position
             if index < len(parameter_names) - 1:
-                while position < len(text) and text[position].isspace():
+                while position < len(parse_text) and parse_text[position].isspace():
                     position += 1
-                if position >= len(text) or text[position] != ",":
+                if position >= len(parse_text) or parse_text[position] != ",":
                     raise ValueError("missing comma between function parameters")
                 position += 1
-                while position < len(text) and text[position].isspace():
+                while position < len(parse_text) and parse_text[position].isspace():
                     position += 1
             else:
-                while position < len(text) and text[position].isspace():
+                while position < len(parse_text) and parse_text[position].isspace():
                     position += 1
-                if position >= len(text) or text[position] != ";":
-                    raise ValueError("missing function-call terminator")
-                position += 1
-        return function, parameters
+                if position < len(parse_text):
+                    if parse_text[position] != ";":
+                        raise ValueError("missing function-call terminator")
+                    position += 1
+                if position != len(parse_text):
+                    raise ValueError("unexpected content after function call")
+        return Response(prompt=prompt, funct=function, parameters=parameters)
     raise ValueError(f"generated output is not a complete valid function call: {text!r}")
