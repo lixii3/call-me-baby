@@ -1,5 +1,4 @@
 try:
-    from os import path
     import sys
     import argparse
     from typing import List, Any
@@ -33,9 +32,13 @@ def parse_args() -> dict[str, Path]:
     try:
         parser = argparse.ArgumentParser()
         parser.add_argument("--functions_definition", required=True,
-                            type=file_esistente, default="data/input/functions_definition.json")
-        parser.add_argument("--input", default="data/input/function_calling_tests.json", type=file_esistente)
-        parser.add_argument("--output", default="data/output/function_calls.json", type=Path)
+                            type=file_esistente,
+                            default="data/input/functions_definition.json")
+        parser.add_argument("--input",
+                            type=file_esistente,
+                            default="data/input/function_calling_tests.json")
+        parser.add_argument("--output", type=Path,
+                            default="data/output/function_calls.json")
     except argparse.ArgumentTypeError as e:
         raise ParsingException(str(e))
     argsdict = vars(parser.parse_args())
@@ -46,6 +49,7 @@ def parse_args() -> dict[str, Path]:
     except OSError:
         argsdict["output"].parent.mkdir(parents=True, exist_ok=True)
     return argsdict
+
 
 def parse_prompts(file: Path) -> List[str]:
     prompts: List[str] = []
@@ -64,24 +68,26 @@ def parse_prompts(file: Path) -> List[str]:
                 elif isinstance(value, list):
                     for item in value:
                         collect_prompts(item)
-        except OSError:
-            raise ParsingException(f"error opening file '{str(file)}'")
+        except (OSError, json.JSONDecodeError):
+            raise ParsingException(f"error parsing file '{str(file)}'")
         collect_prompts(data)
         return prompts
     return []
+
 
 def parse_functions(funct_def_file: Path) -> list[Funct]:
     functions: list[Funct] = []
     try:
         with funct_def_file.open("r", encoding="utf-8") as json_file:
-                    data = json.load(json_file)
-    except (KeyError, OSError):
-        raise ParsingException(f"error opening file '{str(funct_def_file)}'")
+            data = json.load(json_file)
+    except (KeyError, OSError, json.JSONDecodeError):
+        raise ParsingException(f"error parsing file '{str(funct_def_file)}'")
     for d in data:
         dd = dict(d)
         name = str(dd["name"])
         description = str(dd["description"])
-        parameters = {str(k): str(dict(v).get("type")) for k, v in dict(dd["parameters"]).items()}
+        parameters = {str(k): str(dict(v).get("type"))
+                      for k, v in dict(dd["parameters"]).items()}
         returns = str(dict(dd["returns"])["type"])
         try:
             f = Funct(name=name, description=description,

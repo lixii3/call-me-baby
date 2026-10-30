@@ -4,7 +4,6 @@ from enum import Enum, auto
 from typing import Any
 from pydantic import BaseModel
 from src.utils import Response
-
 from src.utils import Funct, matches_type
 
 
@@ -125,8 +124,9 @@ class _JsonPrefixParser(BaseModel):
         if self.text[self.position] == "0":
             self.position += 1
         elif self.text[self.position] in "123456789":
-            #CONTINUA FINCHE CI SONO DIGITS
-            while self.position < len(self.text) and self.text[self.position].isdigit():
+            # CONTINUA FINCHE CI SONO DIGITS
+            while self.position < len(self.text) and\
+               self.text[self.position].isdigit():
                 self.position += 1
         else:
             raise _InvalidJsonPrefix("invalid number")
@@ -138,12 +138,16 @@ class _JsonPrefixParser(BaseModel):
                 return False
             if not self.text[self.position].isdigit():
                 raise _InvalidJsonPrefix("invalid fraction")
-            while self.position < len(self.text) and self.text[self.position].isdigit() and decimal_digits < MAX_DECIMAL_DIGITS:
+            while self.position < len(self.text) and \
+                    self.text[self.position].isdigit() and \
+                    decimal_digits < MAX_DECIMAL_DIGITS:
                 self.position += 1
                 decimal_digits += 1
 
         # controllo esponente
-        if self.position < len(self.text) and self.text[self.position] in "eE" and decimal_digits < MAX_DECIMAL_DIGITS:
+        if self.position < len(self.text) and\
+           self.text[self.position] in "eE" and\
+           decimal_digits < MAX_DECIMAL_DIGITS:
             self.position += 1
             if self.position == len(self.text):
                 return False
@@ -153,12 +157,14 @@ class _JsonPrefixParser(BaseModel):
                     return False
             if not self.text[self.position].isdigit():
                 raise _InvalidJsonPrefix("invalid exponent")
-            while self.position < len(self.text) and self.text[self.position].isdigit():
+            while self.position < len(self.text) and\
+                    self.text[self.position].isdigit():
                 self.position += 1
         return True
 
     def _skip_whitespace(self) -> None:
-        while self.position < len(self.text) and self.text[self.position] in " \t\r\n":
+        while self.position < len(self.text) and\
+           self.text[self.position] in " \t\r\n":
             self.position += 1
 
     def _parse_array(self) -> bool:
@@ -171,7 +177,7 @@ class _JsonPrefixParser(BaseModel):
             self.position += 1
             return True
         while True:
-            #value incompleto
+            # value incompleto
             if not self.parse_value():
                 return False
             self._skip_whitespace()
@@ -264,7 +270,8 @@ def _function_prefix_state(text: str, function: Funct) -> _PrefixState:
 
     parameters = list(function.parameters.items())
     for index, (parameter_name, parameter_type) in enumerate(parameters):
-        literal = f"{parameter_name}: " if index > 0 else f" {parameter_name}: "
+        literal = f"{parameter_name}: " if index > 0\
+            else f" {parameter_name}: "
         remaining = text[position:]
 
         # controllo se deveessere ancora specificato il noe del parametro
@@ -339,7 +346,8 @@ def is_complete_output(text: str, functions: list[Funct]) -> bool:
     )
 
 
-def is_valid_token(partial: str, candidate: str, functions: list[Funct]) -> bool:
+def is_valid_token(partial: str, candidate: str,
+                   functions: list[Funct]) -> bool:
     """Compatibility helper for validating a decoded candidate token."""
     return is_valid_output_prefix(partial + candidate, functions)
 
@@ -349,38 +357,46 @@ def is_fn_name(candidate: str, functions: list[Funct]) -> bool:
 
 
 def parse_output(text: str, functions: list[Funct], prompt: str) -> Response:
-    """Parse a completed constrained-decoding result into its function and arguments."""
+    """Parse a completed constrained-decoding result into its
+    function and arguments."""
     for function in functions:
         parse_text = text
-        if _function_prefix_state(parse_text, function) is not _PrefixState.COMPLETE:
+        if _function_prefix_state(parse_text,
+                                  function) is not _PrefixState.COMPLETE:
             parse_text = text.rstrip()
-            if _function_prefix_state(parse_text + ";", function) is not _PrefixState.COMPLETE:
+            if _function_prefix_state(parse_text + ";",
+                                      function) is not _PrefixState.COMPLETE:
                 continue
         parameters: dict[str, Any] = {}
         position = len(function.name)
         parameter_names = list(function.parameters)
         for index, parameter_name in enumerate(parameter_names):
-            literal = f"{parameter_name}: " if index > 0 else f" {parameter_name}: "
+            literal = f"{parameter_name}: " if index > 0\
+                else f" {parameter_name}: "
             position += len(literal)
             parser = _JsonPrefixParser(text=parse_text, position=position)
             if parameter_name == "regex":
                 if not parser.parse_regex_value():
-                    raise ValueError("incomplete JSON value in generated function call")
+                    raise ValueError("incomplete JSON value in function call")
             else:
                 if not parser.parse_value():
-                    raise ValueError("incomplete JSON value in generated function call")
-            parameters[parameter_name] = json.loads(parse_text[position:parser.position])
+                    raise ValueError("incomplete JSON value in function call")
+            parameters[parameter_name] = json.loads(
+                parse_text[position:parser.position])
             position = parser.position
             if index < len(parameter_names) - 1:
-                while position < len(parse_text) and parse_text[position].isspace():
+                while position < len(parse_text) and\
+                   parse_text[position].isspace():
                     position += 1
                 if position >= len(parse_text) or parse_text[position] != ",":
-                    raise ValueError("missing comma between function parameters")
+                    raise ValueError("missing ',' between function parameters")
                 position += 1
-                while position < len(parse_text) and parse_text[position].isspace():
+                while position < len(parse_text) and\
+                        parse_text[position].isspace():
                     position += 1
             else:
-                while position < len(parse_text) and parse_text[position].isspace():
+                while position < len(parse_text) and\
+                   parse_text[position].isspace():
                     position += 1
                 if position < len(parse_text):
                     if parse_text[position] != ";":
@@ -389,4 +405,5 @@ def parse_output(text: str, functions: list[Funct], prompt: str) -> Response:
                 if position != len(parse_text):
                     raise ValueError("unexpected content after function call")
         return Response(prompt=prompt, funct=function, parameters=parameters)
-    raise ValueError(f"generated output is not a complete valid function call: {text!r}")
+    raise ValueError("generated output is not a complete "
+                     f"valid function call: {text!r}")

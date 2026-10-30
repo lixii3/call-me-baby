@@ -7,7 +7,7 @@ en.subject.pdf
 .venv/
 */.venv/
 
-data
+data/
 # Bytecode e cache di Python
 *.py[cod]
 *$py.class

@@ -27,3 +27,6 @@ llm_sdk = { workspace = true }
 
 [tool.uv.workspace]
 members = ["llm_sdk"]
+
+[tool.mypy]
+mypy_path = "llm_sdk"

@@ -3,9 +3,11 @@ PYTHON = python3
 VENV = .venv
 BIN = $(VENV)/bin
 
-ARGS = --functions_definition data/input/functions_definition.json \
-	   --input test/prompt_test.json \
-	   --output test/test_output.json
+TEST_ARGS = --functions_definition test/input/functions_definition.json\
+			--input test/input/prompt_test.json \
+			--output test/output/test_output.json
+ARGS = --functions_definition data/input/functions_definition.json
+
 
 install:
 	uv sync
@@ -13,14 +15,16 @@ install:
 	$(BIN)/python3 -m pip install mypy
 
 run:
-	uv sync
 	uv run python -m $(NAME) $(ARGS)
+
+test:
+	uv run python -m $(NAME) $(TEST_ARGS)
 
 debug:
 	PYTHONPATH=. $(BIN)/$(PYTHON) -m pdb $(NAME)/__main__.py $(ARGS)
 
 clean:
-	rm -rfv src/__pycache__
+	rm -rfv **/__pycache__/*
 	rm -rfv $(VENV)
 
 lint:
@@ -30,10 +34,10 @@ lint:
 								--check-untyped-defs
 
 lint-strict:
-	$(BIN)/flake8 $(NAME) src
-	$(BIN)/mypy $(NAME) src --strict
+	$(BIN)/flake8 $(NAME)
+	$(BIN)/mypy $(NAME) --strict
 
 build:
 	poetry build -f wheel
 
-.PHONY: install run debug clean lint lint-strict build
+.PHONY: install run test debug clean lint lint-strict build

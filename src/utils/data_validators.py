@@ -1,7 +1,6 @@
 from typing import Any, Dict
 from typing_extensions import Self
-from pydantic import BaseModel, Field, model_validator, ValidationError
-from pathlib import Path
+from pydantic import BaseModel, Field, model_validator
 from .token_utills import matches_type
 
 
@@ -28,8 +27,9 @@ class Response(BaseModel):
                 raise ValueError(f"parameter '{name}' does not belong to "
                                  f"function '{self.funct.name}'")
             if not matches_type(value, type_p):
-                raise ValueError(f"unmatched pair parameter value/parameter type; got: {value}, "
-                                 f"expected type: {self.funct.parameters.get(name)}")
+                raise ValueError("unmatched pair parameter value/parameter "
+                                 f"type; got: {value}, expected type: "
+                                 f"{self.funct.parameters.get(name)}")
             if type_p.lower() == "number":
                 self.parameters[name] = float(self.parameters[name])
         return self
@@ -41,4 +41,9 @@ class Response(BaseModel):
         ret["parameters"] = self.parameters
         return ret
 
-
+    def __str__(self) -> str:
+        s: str = ("=" * 20 +
+                  f"\nprompt= {self.prompt}\n"
+                  f"funct= {self.funct.name} -> "
+                  f"parameters= {self.parameters}")
+        return s
