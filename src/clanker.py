@@ -1,11 +1,12 @@
 from llm_sdk import Small_LLM_Model as Baby
 
 from src.constrained_decoding import (
-    is_complete_output,
     is_valid_output_prefix,
+    is_complete_output,
     parse_output,
 )
 from src.utils import Funct, Path, Response, add_responses_to_json
+from src.utils import get_token_vocabulary
 
 
 class BabyCallException(Exception):
@@ -60,8 +61,8 @@ def answer_the_call_baby_please(prompt: str,
     )
     input_ids: list[int] = baby.encode(mod_prompt).squeeze(0).tolist()
     generated_ids: list[int] = []
-    max_new_tokens = 3000
-    eos_token_id = baby.get_eos_token_id()
+    max_new_tokens = 5000
+    eos_token: int | None = get_token_vocabulary(baby).get(";")
     for _ in range(max_new_tokens):
         logits = baby.get_logits_from_input_ids(input_ids)
         ranked_token_ids = sorted(
@@ -71,12 +72,11 @@ def answer_the_call_baby_please(prompt: str,
         selected_token: int | None = None
 
         for token_id in ranked_token_ids:
-            if token_id == eos_token_id:
+            if token_id == eos_token:
                 if is_complete_output(partial, functions):
                     selected_token = token_id
                     break
                 continue
-
             candidate_ids = generated_ids + [token_id]
             candidate = baby.decode(candidate_ids)
             if candidate == partial:
@@ -86,14 +86,14 @@ def answer_the_call_baby_please(prompt: str,
                 generated_ids.append(token_id)
                 input_ids.append(token_id)
                 break
-
+        if selected_token == eos_token:
+            break
         if selected_token is None:
             raise BabyCallException(
                 "The model has no token that can continue a valid "
                 f"function call. Generated prefix: {partial!r}"
             )
-        if selected_token == eos_token_id:
-            break
+
         # CONTROLLA SE LA FUNCTION CALL E' GIA' COMPLETA, IN TAL
         # CASO NON CONTINUO A CERCARE TOKEN
         if baby.decode([selected_token]).isspace():
